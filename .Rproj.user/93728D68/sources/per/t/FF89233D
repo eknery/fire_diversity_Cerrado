@@ -1,27 +1,28 @@
 {
-    "id": "7FAEC542",
+    "id": "FF89233D",
     "path": "~/GitHub/diversity_environment_Cerrado/general_script.R",
     "project_path": "general_script.R",
     "type": "r_source",
-    "hash": "1181444466",
+    "hash": "729169153",
     "contents": "",
     "dirty": false,
-    "created": 1676568245717.0,
+    "created": 1708978486507.0,
     "source_on_save": false,
     "relative_order": 1,
     "properties": {
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "20,0",
-        "scrollLine": "6"
+        "cursorPosition": "115,0",
+        "scrollLine": "99",
+        "disableDependencyDiscovery": "1"
     },
     "folds": "",
-    "lastKnownWriteTime": 1676623914,
+    "lastKnownWriteTime": 1709086265,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1676623914259,
+    "last_content_update": 1709086265539,
     "read_only": false,
     "read_only_alternatives": []
 }
