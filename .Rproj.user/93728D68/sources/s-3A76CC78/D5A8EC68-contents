@@ -1,0 +1,21 @@
+###### FISRT AXIS
+hist( comm_data$floristic_PCo1 )
+
+### species compostion model 1
+glm_comp1 = glm(data = s_comm_data,
+                floristic_PCo1 ~ fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2 , 
+                family = gaussian())
+
+summary(glm_comp1)
+plot(glm_comp1)
+check_resid(model = glm_comp1)
+
+### species compostion model 1
+glm_comp2 = glm(data = s_comm_data,
+                floristic_PCo2 ~ fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2 , 
+                family = gaussian())
+
+summary(glm_comp2)
+plot(glm_comp2)
+check_resid(model = glm_comp1)
+
