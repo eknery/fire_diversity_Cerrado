@@ -106,11 +106,48 @@ for(i in 2:length(all_explanatory) ){
              y_label = "ln(Fire frequency)")
 }
 
+### export plots
 tiff("plots/fire_plots.tiff", units="cm", width=14, height=14, res=600)
   ggarrange(fire_plots[[2]], fire_plots[[2]],fire_plots[[3]], fire_plots[[4]],
             labels = c("", "A", "B", "C"),
             ncol = 2, nrow = 2)
 dev.off()
+
+
+enhance = 3
+
+### export fire map
+tiff("plots/fire_map.tiff", units="cm", width=7, height=7, res=600)
+  ggplot(data = comm_data) +
+    geom_point(aes(x = longitude, 
+                   y = latitude,
+                   size = fire_frequency*enhance,
+                   ),
+               alpha = 0.20
+    ) +
+    scale_size(
+      breaks = c(0.2,1,5, 25)*enhance,
+      labels = c(0.2,1,5, 25),
+      guide = "legend"
+    )+
+    xlab("Longitude") +
+    ylab("Latitude") +
+    theme(panel.background=element_rect(fill="white"),
+          panel.grid=element_line(colour=NULL),
+          panel.border=element_rect(fill=NA,colour="black"),
+          axis.title.x = element_text(size=12, face="bold"),
+          axis.title.y = element_text(size=12, face="bold"),
+          axis.text.x = element_text(size= 10, angle = 0),
+          axis.text.y = element_text(size= 10, angle = 0),
+          legend.title= element_blank(),
+          legend.key.size =  unit(0.05, 'cm'),
+          legend.background = element_rect(colour = "black", linetype='solid', fill = NA),
+          legend.key = element_rect(colour = NA, fill = NA),
+          legend.direction="vertical",
+          legend.position = c(0.8,0.70)
+    )
+dev.off()
+
 ############################## SPECIES RICHNESS ###############################
 
 ##### species richeness
