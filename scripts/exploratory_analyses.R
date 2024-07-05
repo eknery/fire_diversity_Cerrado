@@ -1,4 +1,10 @@
-############################### LOADING DATA ###################################
+
+### maintained packages
+if (!require("tidyverse")) install.packages("tidyverse"); require("tidyverse")
+if (!require("ggplot2")) install.packages("ggplot2"); library("ggplot2")
+if (!require("ggpubr")) install.packages("ggpubr"); library("ggpubr")
+if (!require("nlme")) install.packages("nlme"); library("nlme")
+if (!require("vegan")) install.packages("vegan"); library("vegan")
 
 ### environmental data
 comm_data = read.csv("0_data/comm_data.csv", sep=",", h=T)
@@ -72,6 +78,7 @@ which(low_fire_sp$sp == high_fire_sp$sp[[1]])
 
 low_fire_sp %>% 
   filter(sp %in% high_fire_sp$sp)
+
 
 ################################# other plots #################################
 

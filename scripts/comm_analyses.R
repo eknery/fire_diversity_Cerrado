@@ -1,13 +1,10 @@
 ########################## LOADING LIBRARIES ##################################
 
-### old package
-install.packages("0_data/mvpart_1.6-2.tar.gz", repos = NULL, type = "source")
-require("mvpart")
-
 ### maintained packages
 if (!require("tidyverse")) install.packages("tidyverse"); require("tidyverse")
 if (!require("ggplot2")) install.packages("ggplot2"); library("ggplot2")
 if (!require("ggpubr")) install.packages("ggpubr"); library("ggpubr")
+if (!require("ape")) install.packages("ape"); library("ape")
 if (!require("nlme")) install.packages("nlme"); library("nlme")
 if (!require("vegan")) install.packages("vegan"); library("vegan")
 
@@ -76,6 +73,30 @@ check_resid = function(model){
   resid_n = resid(model)[1:N]
   shapiro.test(resid_n)
 }
+################################# ORDINATION ###################################
+
+### sp presence matrix
+plot_mtx = ind_data %>% 
+  group_by(plot_id, sp) %>% 
+  reframe(n = n()) %>% 
+  mutate(n = case_when(n >1 ~ 1, T ~ n)) %>% 
+  pivot_wider(
+    names_from =  sp,
+    names_expand = T,
+    values_from = n,
+    values_fill = 0
+  )
+
+### dissimilarity
+distance = vegdist(plot_mtx[,-1], method = "bray")
+exdistance = stepacross(dis = distance, path = "extended")
+
+### pcoa
+ord = pcoa(exdistance)
+##
+ord$values
+
+sum(ord$values$Relative_eig)
 
 ################################# FIRE REGIME #################################
 
@@ -113,9 +134,6 @@ tiff("plots/fire_plots.tiff", units="cm", width=14, height=14, res=600)
             ncol = 2, nrow = 2)
 dev.off()
 
-
-enhance = 3
-
 ### export fire map
 tiff("plots/fire_map.tiff", units="cm", width=7, height=7, res=600)
   ggplot(data = comm_data) +
@@ -126,7 +144,7 @@ tiff("plots/fire_map.tiff", units="cm", width=7, height=7, res=600)
                alpha = 0.20
     ) +
     scale_size(
-      breaks = c(0.2,1,5, 25)*enhance,
+      breaks = c(0.2,1,5, 25)*3,
       labels = c(0.2,1,5, 25),
       guide = "legend"
     )+

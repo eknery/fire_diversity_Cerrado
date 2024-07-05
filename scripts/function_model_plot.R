@@ -57,7 +57,7 @@ if( relationship == "none" ) {
                   y = model_func(.data[[x]])
               ),
               linewidth = 1,
-              linetype = "dashed"
+              linetype = "solid"
     ) +
 
     xlab(x_label) +
