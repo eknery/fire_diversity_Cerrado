@@ -380,7 +380,8 @@ plot_env = comm_data %>%
   dplyr::select(any_of(c("plot_id", 
                          "fire_frequency", 
                          "seasonal_precipitation",
-                         "soil_PC1"
+                         "soil_PC1",
+                         "soil_PC2"
                          ) 
                        ) 
                 )
