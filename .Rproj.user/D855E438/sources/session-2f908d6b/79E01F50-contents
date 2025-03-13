@@ -34,7 +34,7 @@ comm_data  =  comm_data %>%
 
 ### transforming fire
 comm_data = comm_data %>% 
-  mutate(fire_frequency = burned*10)
+  mutate(fire_frequency = burned)
 
 ### scaled predictors
 s_comm_data = comm_data %>% 
@@ -84,7 +84,6 @@ plot_spp = ind_data %>%
 plot_spp_mtx = as.matrix(plot_spp[,-1])
 rownames(plot_spp_mtx) = plot_spp$plot_id
 
-
 ### environment per plot
 plot_env = comm_data %>% 
   unite("plot_id", site, plot, sep="_", remove = FALSE) %>% 
@@ -97,6 +96,7 @@ plot_env = comm_data %>%
   ) 
   ) 
   )
+
 ### transforming in matrix
 plot_env_mtx = as.matrix(plot_env[,-1])
 rownames(plot_env_mtx) = plot_env$plot_id
@@ -122,7 +122,6 @@ plot_coords_mtx = as.matrix(plot_coords[,-1])
 rownames(plot_coords_mtx) = plot_coords$plot_id
 
 ### dissimilarity matrices
-spp_dist = xdiss(plot_spp_mtx, method = "binary")
 env_dist = dist(plot_env_mtx, method = "euclidean")
 fire_dist = dist(plot_fire_mtx, method = "euclidean")
 precip_dist = dist(plot_precip_mtx, method = "euclidean")
@@ -132,7 +131,7 @@ geo_dist = dist(plot_coords_mtx, method = "euclidean")
 
 ### MANTEL
 mantel.test(m1 = as.matrix(geo_dist), 
-            m2 = as.matrix(soil2_dist), 
+            m2 = as.matrix(env_dist), 
             graph = FALSE, 
             nperm = 999, 
             alternative = "greater"
@@ -170,9 +169,7 @@ exdistance = stepacross(dis = distance, path = "extended")
 
 ### pcoa
 ord = pcoa(exdistance)
-##
 ord$values
-
 sum(ord$values$Relative_eig)
 
 ################################# FIRE REGIME #################################
