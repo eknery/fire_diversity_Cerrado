@@ -176,7 +176,7 @@ sum(ord$values$Relative_eig)
 
 ################################# FIRE REGIME #################################
 
-### gls model
+### glm model
 glm_fire1 = glm(
   data = s_comm_data,
   fire_frequency ~ seasonal_precipitation + soil_PC1 + soil_PC2, 
@@ -184,7 +184,7 @@ glm_fire1 = glm(
 )
 
 summary(glm_fire1)
-plot(gls_fire1)
+plot(glm_fire1)
 shapiro.test( residuals(glm_fire1) )
 
 ###### fire plots
@@ -202,4 +202,11 @@ for(i in 2:length(all_explanatory) ){
                                x_label = all_xlabels[i], 
                                y_label = "ln(Fire frequency)")
 }
+
+### export plots
+tiff("1_plots/fire_plots.tiff", units="cm", width=14, height=14, res=600)
+ggarrange(fire_plots[[2]], fire_plots[[2]],fire_plots[[3]], fire_plots[[4]],
+          labels = c("", "A", "B", "C"),
+          ncol = 2, nrow = 2)
+dev.off()
 
