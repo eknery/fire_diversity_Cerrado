@@ -149,6 +149,7 @@ mantel_test = vegan::mantel.partial(
 )
 
 plot(env_dist, spp_dist)
+
 ################################# ORDINATION ###################################
 
 ### sp presence matrix
@@ -209,4 +210,168 @@ ggarrange(fire_plots[[2]], fire_plots[[2]],fire_plots[[3]], fire_plots[[4]],
           labels = c("", "A", "B", "C"),
           ncol = 2, nrow = 2)
 dev.off()
+
+############################## SPECIES RICHNESS ###############################
+
+##### species richeness
+hist(log(comm_data$richness) )
+
+### species richness model
+glm_rich1 = glm(
+  data = s_comm_data,
+  richness ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  family = poisson(link = "identity")
+)
+
+### model summary
+summary(glm_rich1)
+plot(glm_rich1)
+shapiro.test(resid(glm_rich1))
+
+###### richness plots
+rich_plots = list()
+rich_relationships = c("none","linear", "none", "none")
+
+### plots 
+for(i in 1:length(all_explanatory) ){
+  
+  rich_plots[[i]] = model_plot(data = s_comm_data %>% mutate(richness = log(richness)),
+                               x = all_explanatory[i],
+                               y = "richness", 
+                               model = gls_rich1,
+                               relationship = rich_relationships[i],
+                               x_label = all_xlabels[i], 
+                               y_label = "ln(N species per plot)")
+}
+
+tiff("plots/richness_plots.tiff", units="cm", width=14, height=14, res=600)
+ggarrange(rich_plots[[1]], rich_plots[[2]], rich_plots[[3]], rich_plots[[4]],
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
+dev.off()
+
+############################### SPECIES ABUNDANCE #############################
+
+glm_abund1 = glm(
+  data = s_comm_data,
+  density ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  family = poisson(link = "identity")
+)
+
+summary(glm_abund1)
+plot(glm_abund1)
+shapiro.test(resid(glm_abund1))
+
+#################################### FISHER ALPHA ##############################
+
+### species diversity model
+glm_fish1 = glm(
+  data = s_comm_data,
+  fisher ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  family = poisson(link = "identity")
+)
+
+### model summary
+summary(glm_fish1)
+plot(glm_fish1)
+shapiro.test(resid(glm_fish1))
+
+###### richness plots
+fish_plots = list()
+fish_relationships = c("none","none", "none", "none")
+
+### plots 
+for(i in 1:length(all_explanatory) ){
+  
+  fish_plots[[i]] = model_plot(data = s_comm_data %>% mutate(fisher = log(fisher)),
+                               x = all_explanatory[i],
+                               y = "fisher", 
+                               model = gls_fish1,
+                               relationship = fish_relationships[i],
+                               x_label = all_xlabels[i], 
+                               y_label = "ln(Fisher's alpha)")
+}
+
+tiff("plots/fisher_plots.tiff", units="cm", width=14, height=14, res=600)
+ggarrange(fish_plots[[1]], fish_plots[[2]], fish_plots[[3]], fish_plots[[4]],
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
+dev.off()
+
+############################## SPECIES COMPOSITION #############################
+
+hist(s_comm_data$floristic_PCo1)
+
+### species compostion model 1
+glm_comp1 = glm(
+  data = s_comm_data,
+  floristic_PCo1 ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  family = gaussian(link = "inverse")
+)
+
+summary(glm_comp1)
+plot(glm_comp1)
+shapiro.test(resid(glm_comp1) )
+
+###### composition2 plots
+comp1_plots = list()
+comp1_relationships = c("none","none", "none", "none")
+
+### plots 
+for(i in 1:length(all_explanatory) ){
+  
+  comp1_plots[[i]] = model_plot(data = s_comm_data,
+                                x = all_explanatory[i],
+                                y = "floristic_PCo1", 
+                                model = gls_comp1,
+                                relationship = comp1_relationships[i],
+                                x_label = all_xlabels[i], 
+                                y_label = "Floristic PCo1")
+}
+
+tiff("plots/comp1_plots.tiff", units="cm", width=14, height=14, res=600)
+ggarrange(comp1_plots[[1]], comp1_plots[[2]], comp1_plots[[3]], comp1_plots[[4]],
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
+dev.off()
+
+
+###### SECOND AXIS
+hist(comm_data$floristic_PCo2)
+
+### species compostion model 2
+gls_comp2 = gls(
+  data = s_comm_data ,
+  floristic_PCo2 ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  family = gaussian(link = "log")
+)
+
+### summary model
+summary(gls_comp2)
+plot(gls_comp2)
+check_resid(model = gls_comp2)
+
+###### composition2 plots
+comp2_plots = list()
+comp2_relationships = c("linear","none", "none", "linear")
+
+### plots 
+for(i in 1:length(all_explanatory) ){
+  
+  comp2_plots[[i]] = model_plot(data = s_comm_data,
+                                x = all_explanatory[i],
+                                y = "floristic_PCo2", 
+                                model = gls_comp2,
+                                relationship = comp2_relationships[i],
+                                x_label = all_xlabels[i], 
+                                y_label = "Floristic PCo2")
+}
+
+tiff("plots/comp2_plots.tiff", units="cm", width=14, height=14, res=600)
+ggarrange(comp2_plots[[1]], comp2_plots[[2]], comp2_plots[[3]], comp2_plots[[4]],
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
+dev.off()
+
+
 
