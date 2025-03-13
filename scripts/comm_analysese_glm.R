@@ -178,7 +178,7 @@ sum(ord$values$Relative_eig)
 glm_fire1 = glm(
   data = s_comm_data,
   fire_frequency ~ seasonal_precipitation + soil_PC1 + soil_PC2, 
-  family = poisson(link = "identity")
+  family = Gamma()
 )
 
 summary(glm_fire1)
@@ -265,7 +265,7 @@ shapiro.test(resid(glm_abund1))
 glm_fish1 = glm(
   data = s_comm_data,
   fisher ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
-  family = poisson(link = "identity")
+  family = Gamma(link = "log")
 )
 
 ### model summary
