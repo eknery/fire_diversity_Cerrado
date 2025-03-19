@@ -5,7 +5,6 @@ if (!require("tidyverse")) install.packages("tidyverse"); require("tidyverse")
 if (!require("ggplot2")) install.packages("ggplot2"); library("ggplot2")
 if (!require("ggpubr")) install.packages("ggpubr"); library("ggpubr")
 if (!require("ape")) install.packages("ape"); library("ape")
-if (!require("nlme")) install.packages("nlme"); library("nlme")
 if (!require("vegan")) install.packages("vegan"); library("vegan")
 
 ### my functions
@@ -34,7 +33,7 @@ comm_data  =  comm_data %>%
 
 ### transforming fire
 comm_data = comm_data %>% 
-  mutate(fire_frequency = burned)
+  mutate(fire_frequency = burned * 10)
 
 ### scaled predictors
 s_comm_data = comm_data %>% 
@@ -50,7 +49,7 @@ hist(comm_data$fire_frequency)
 ########################## OVERALL PARAMETERS ##########################
 
 ### all explanatory vars
-all_explanatory = c("fire_frequency", 
+all_explanatory = c("s_fire_frequency", 
                     "seasonal_precipitation",
                     "soil_PC1",
                     "soil_PC2"
@@ -131,7 +130,7 @@ geo_dist = dist(plot_coords_mtx, method = "euclidean")
 
 ### MANTEL
 mantel.test(m1 = as.matrix(geo_dist), 
-            m2 = as.matrix(env_dist), 
+            m2 = as.matrix(fire_dist), 
             graph = FALSE, 
             nperm = 999, 
             alternative = "greater"
@@ -178,7 +177,7 @@ sum(ord$values$Relative_eig)
 glm_fire1 = glm(
   data = s_comm_data,
   fire_frequency ~ seasonal_precipitation + soil_PC1 + soil_PC2, 
-  family = Gamma()
+  family = poisson()
 )
 
 summary(glm_fire1)
@@ -187,18 +186,18 @@ shapiro.test( residuals(glm_fire1) )
 
 ###### fire plots
 fire_plots = list()
-fire_relationships = c("none","linear", "linear", "none")
+fire_relationships = c("linear","linear", "linear", "linear")
 
 ### plots 
 for(i in 2:length(all_explanatory) ){
   
   fire_plots[[i]] = model_plot(data = s_comm_data,
                                x = all_explanatory[i],
-                               y = "fire_frquency", 
+                               y = "fire_frequency", 
                                model = glm_fire1,
                                relationship = fire_relationships[i],
                                x_label = all_xlabels[i], 
-                               y_label = "ln(Fire frequency)")
+                               y_label = "Fire frequency")
 }
 
 ### export plots
@@ -211,7 +210,7 @@ dev.off()
 ############################## SPECIES RICHNESS ###############################
 
 ##### species richeness
-hist(log(comm_data$richness) )
+hist(log(s_comm_data$richness) )
 
 ### species richness model
 glm_rich1 = glm(
@@ -225,26 +224,34 @@ summary(glm_rich1)
 plot(glm_rich1)
 shapiro.test(resid(glm_rich1))
 
-###### richness plots
-rich_plots = list()
-rich_relationships = c("none","linear", "none", "none")
+### plot model? 
+show_plot = c(TRUE,TRUE, FALSE, FALSE)
 
+## graphical parameter
+par(mfrow = c(2,2))
 ### plots 
 for(i in 1:length(all_explanatory) ){
-  
-  rich_plots[[i]] = model_plot(data = s_comm_data %>% mutate(richness = log(richness)),
-                               x = all_explanatory[i],
-                               y = "richness", 
-                               model = gls_rich1,
-                               relationship = rich_relationships[i],
-                               x_label = all_xlabels[i], 
-                               y_label = "ln(N species per plot)")
+  ## variables names
+  x = all_explanatory[i]
+  y = "richness"
+  ## get variables
+  pred = as.numeric(s_comm_data[[x]])
+  resp = as.numeric(s_comm_data[[y]])
+  ## simple model for each predictor
+  model = glm(resp ~ pred, poisson("identity"))
+  ## plot model
+  plot_glm(
+    data = s_comm_data,
+    x = x,
+    y = y, 
+    model = model,
+    show = show_plot[i],
+    x_label = all_xlabels[i], 
+    y_label = "Species richness"
+  )
 }
 
 tiff("plots/richness_plots.tiff", units="cm", width=14, height=14, res=600)
-ggarrange(rich_plots[[1]], rich_plots[[2]], rich_plots[[3]], rich_plots[[4]],
-          labels = c("A", "B", "C", "D"),
-          ncol = 2, nrow = 2)
 dev.off()
 
 ############################### SPECIES ABUNDANCE #############################
