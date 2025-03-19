@@ -211,24 +211,24 @@ dev.off()
 
 ##### species richeness
 hist(log(s_comm_data$richness) )
-
 ### species richness model
 glm_rich1 = glm(
   data = s_comm_data,
   richness ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
   family = poisson(link = "identity")
 )
-
 ### model summary
 summary(glm_rich1)
 plot(glm_rich1)
 shapiro.test(resid(glm_rich1))
 
 ### plot model? 
-show_plot = c(TRUE,TRUE, FALSE, FALSE)
-
+show_model = c(TRUE,TRUE, FALSE, FALSE)
 ## graphical parameter
+tiff("1_plots/richness_plots.tiff", 
+     units="cm", width=14, height=14, res=600)
 par(mfrow = c(2,2))
+par(mar = c(4.5, 4, 1, 1))
 ### plots 
 for(i in 1:length(all_explanatory) ){
   ## variables names
@@ -245,13 +245,11 @@ for(i in 1:length(all_explanatory) ){
     x = x,
     y = y, 
     model = model,
-    show = show_plot[i],
+    show_model = show_model[i],
     x_label = all_xlabels[i], 
     y_label = "Species richness"
   )
 }
-
-tiff("plots/richness_plots.tiff", units="cm", width=14, height=14, res=600)
 dev.off()
 
 ############################### SPECIES ABUNDANCE #############################

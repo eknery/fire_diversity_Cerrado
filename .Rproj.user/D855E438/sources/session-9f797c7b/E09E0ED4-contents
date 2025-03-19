@@ -1,4 +1,4 @@
-plot_glm = function(data, x, y, model, show, x_label = "X", y_label = "Y"){
+plot_glm = function(data, x, y, model, show_model, x_label, y_label){
   
   ### predictor and response variables
   pred = as.numeric(data[[x]])
@@ -28,7 +28,7 @@ plot_glm = function(data, x, y, model, show, x_label = "X", y_label = "Y"){
     xlab = x_label,
     ylab = y_label
     )
-  if(show){
+  if(show_model){
     lines(xweight,yweight, lwd= 2.5)
   }
     
