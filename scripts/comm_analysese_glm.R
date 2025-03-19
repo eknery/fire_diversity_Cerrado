@@ -63,91 +63,6 @@ all_xlabels = c("Fire frequency",
                 
 )
 
-#################################### MANTEL TEST ################################
-
-### all species names
-spp_names = as.character(unique(ind_data$sp))
-
-### species presence per plot
-plot_spp = ind_data %>% 
-  mutate(plot_id = as.character(plot_id)) %>% 
-  group_by(plot_id) %>% 
-  reframe(sp = as.character(unique(sp)), presence = 1) %>% 
-  pivot_wider(names_from = sp,
-              names_expand = T,
-              values_from = presence,
-              values_fill = as.integer(0)
-  )
-
-### transforming in matrix
-plot_spp_mtx = as.matrix(plot_spp[,-1])
-rownames(plot_spp_mtx) = plot_spp$plot_id
-
-### environment per plot
-plot_env = comm_data %>% 
-  unite("plot_id", site, plot, sep="_", remove = FALSE) %>% 
-  mutate(plot_id = as.character(plot_id)) %>% 
-  dplyr::select(any_of(c("plot_id", 
-                         "fire_frequency", 
-                         "seasonal_precipitation",
-                         "soil_PC1",
-                         "soil_PC2"
-  ) 
-  ) 
-  )
-
-### transforming in matrix
-plot_env_mtx = as.matrix(plot_env[,-1])
-rownames(plot_env_mtx) = plot_env$plot_id
-
-### each environ var per plot
-plot_fire_mtx = as.matrix(plot_env[,"fire_frequency"])
-plot_precip_mtx = as.matrix(plot_env[,"seasonal_precipitation"])
-plot_soil1_mtx = as.matrix(plot_env[,"soil_PC1"])
-plot_soil2_mtx = as.matrix(plot_env[,"soil_PC2"])
-
-rownames(plot_fire_mtx) =  plot_env$plot_id
-rownames(plot_precip_mtx) =  plot_env$plot_id
-rownames(plot_soil1_mtx) =  plot_env$plot_id
-rownames(plot_soil2_mtx) =  plot_env$plot_id
-
-### coordinates per plot
-plot_coords = comm_data %>% 
-  unite("plot_id", site, plot, sep="_", remove = FALSE) %>% 
-  select("plot_id", "longitude", "latitude")
-
-### transforming in matrix
-plot_coords_mtx = as.matrix(plot_coords[,-1])
-rownames(plot_coords_mtx) = plot_coords$plot_id
-
-### dissimilarity matrices
-env_dist = dist(plot_env_mtx, method = "euclidean")
-fire_dist = dist(plot_fire_mtx, method = "euclidean")
-precip_dist = dist(plot_precip_mtx, method = "euclidean")
-soil1_dist = dist(plot_soil1_mtx, method = "euclidean")
-soil2_dist = dist(plot_soil2_mtx, method = "euclidean")
-geo_dist = dist(plot_coords_mtx, method = "euclidean")
-
-### MANTEL
-mantel.test(m1 = as.matrix(geo_dist), 
-            m2 = as.matrix(fire_dist), 
-            graph = FALSE, 
-            nperm = 999, 
-            alternative = "greater"
-            )
-
-
-### PARTIAL MANTEL
-mantel_test = vegan::mantel.partial(
-  xdis = env_dist,
-  ydis = spp_dist,
-  zdis = geo_dist,
-  method="pearson", 
-  permutations=999
-)
-
-plot(env_dist, spp_dist)
-
 ################################# ORDINATION ###################################
 
 ### sp presence matrix
@@ -171,41 +86,189 @@ ord = pcoa(exdistance)
 ord$values
 sum(ord$values$Relative_eig)
 
+#################################### MANTEL TEST ################################
+
+### all species names
+spp_names = as.character(unique(ind_data$sp))
+
+### species presence per plot
+plot_spp = ind_data %>% 
+  mutate(plot_id = as.character(plot_id)) %>% 
+  group_by(plot_id) %>% 
+  reframe(sp = as.character(unique(sp)), presence = 1) %>% 
+  pivot_wider(names_from = sp,
+              names_expand = T,
+              values_from = presence,
+              values_fill = as.integer(0)
+  )
+
+### diversity per plot
+plot_div = comm_data %>% 
+  unite("plot_id", site, plot, sep="_", remove = FALSE) %>% 
+  mutate(plot_id = as.character(plot_id)) %>% 
+  dplyr::select(any_of(c("plot_id", 
+                         "richness", 
+                         "fisher",
+                         "floristic_PCo1",
+                         "floristic_PCo2"
+  ) 
+  ) 
+  )
+
+### environment per plot
+plot_env = comm_data %>% 
+  unite("plot_id", site, plot, sep="_", remove = FALSE) %>% 
+  mutate(plot_id = as.character(plot_id)) %>% 
+  dplyr::select(any_of(c("plot_id", 
+                         "fire_frequency", 
+                         "seasonal_precipitation",
+                         "soil_PC1",
+                         "soil_PC2"
+                          ) 
+                      ) 
+  )
+
+### coordinates per plot
+plot_coords = comm_data %>% 
+  unite("plot_id", site, plot, sep="_", remove = FALSE) %>% 
+  select("plot_id", "longitude", "latitude")
+
+### transforming in matrix
+plot_spp_mtx = as.matrix(plot_spp[,-1])
+plot_env_mtx = as.matrix(plot_env[,-1])
+plot_rich_mtx = as.matrix(plot_div[,"richness"])
+plot_fish_mtx = as.matrix(plot_div[,"fisher"])
+plot_flo1_mtx = as.matrix(plot_div[,"floristic_PCo1"])
+plot_flo2_mtx = as.matrix(plot_div[,"floristic_PCo2"])
+plot_fire_mtx = as.matrix(plot_env[,"fire_frequency"])
+plot_precip_mtx = as.matrix(plot_env[,"seasonal_precipitation"])
+plot_soil1_mtx = as.matrix(plot_env[,"soil_PC1"])
+plot_soil2_mtx = as.matrix(plot_env[,"soil_PC2"])
+plot_coords_mtx = as.matrix(plot_coords[,-1])
+
+### naming rows
+rownames(plot_spp_mtx) = plot_spp$plot_id
+rownames(plot_rich_mtx) = plot_div$plot_id
+rownames(plot_fish_mtx) = plot_div$plot_id
+rownames(plot_flo1_mtx) = plot_div$plot_id
+rownames(plot_flo2_mtx) = plot_div$plot_id
+rownames(plot_env_mtx) = plot_env$plot_id
+rownames(plot_fire_mtx) =  plot_env$plot_id
+rownames(plot_precip_mtx) =  plot_env$plot_id
+rownames(plot_soil1_mtx) =  plot_env$plot_id
+rownames(plot_soil2_mtx) =  plot_env$plot_id
+rownames(plot_coords_mtx) = plot_coords$plot_id
+
+### dissimilarity matrices
+distance = vegdist(plot_mtx[,-1], method = "bray")
+spp_dist = stepacross(dis = distance, path = "extended")
+rich_dist = dist(plot_rich_mtx, method = "euclidean")
+fish_dist = dist(plot_fish_mtx, method = "euclidean")
+flo1_dist = dist(plot_flo1_mtx, method = "euclidean")
+flo2_dist = dist(plot_flo2_mtx, method = "euclidean")
+env_dist = dist(plot_env_mtx, method = "euclidean")
+fire_dist = dist(plot_fire_mtx, method = "euclidean")
+precip_dist = dist(plot_precip_mtx, method = "euclidean")
+soil1_dist = dist(plot_soil1_mtx, method = "euclidean")
+soil2_dist = dist(plot_soil2_mtx, method = "euclidean")
+geo_dist = dist(plot_coords_mtx, method = "euclidean")
+
+### MANTEL
+mantel.test(m1 = as.matrix(geo_dist), 
+            m2 = as.matrix(flo2_dist), 
+            graph = FALSE, 
+            nperm = 999, 
+            alternative = "greater"
+            )
+
+### PARTIAL MANTEL
+mantel_test = vegan::mantel.partial(
+  xdis = env_dist,
+  ydis = spp_dist,
+  zdis = geo_dist,
+  method="pearson", 
+  permutations=999
+)
+
+plot(env_dist, spp_dist)
+
 ################################# FIRE REGIME #################################
 
 ### glm model
 glm_fire1 = glm(
   data = s_comm_data,
   fire_frequency ~ seasonal_precipitation + soil_PC1 + soil_PC2, 
-  family = poisson()
+  family = poisson("log")
 )
 
 summary(glm_fire1)
 plot(glm_fire1)
 shapiro.test( residuals(glm_fire1) )
 
-###### fire plots
-fire_plots = list()
-fire_relationships = c("linear","linear", "linear", "linear")
-
+### plot model? 
+show_model = c(FALSE,FALSE,TRUE, FALSE)
+## graphical parameter
+tiff("1_plots/fire_plots.tiff", 
+     units="cm", width=14, height=14, res=600)
+par(mfrow = c(2,2))
+par(mar = c(4.5, 4, 1, 1))
 ### plots 
-for(i in 2:length(all_explanatory) ){
-  
-  fire_plots[[i]] = model_plot(data = s_comm_data,
-                               x = all_explanatory[i],
-                               y = "fire_frequency", 
-                               model = glm_fire1,
-                               relationship = fire_relationships[i],
-                               x_label = all_xlabels[i], 
-                               y_label = "Fire frequency")
+for(i in 1:length(all_explanatory) ){
+  ## variables names
+  x = all_explanatory[i]
+  y = "fire_frequency"
+  ## get variables
+  pred = as.numeric(s_comm_data[[x]])
+  resp = as.numeric(s_comm_data[[y]])
+  ## simple model for each predictor
+  model = glm(resp ~ pred, poisson("log"))
+  ## plot model
+  plot_glm(
+    data = s_comm_data,
+    x = x,
+    y = y, 
+    model = model,
+    show_model = show_model[i],
+    x_label = all_xlabels[i], 
+    y_label = "Fire frequency"
+  )
 }
-
-### export plots
-tiff("1_plots/fire_plots.tiff", units="cm", width=14, height=14, res=600)
-ggarrange(fire_plots[[2]], fire_plots[[2]],fire_plots[[3]], fire_plots[[4]],
-          labels = c("", "A", "B", "C"),
-          ncol = 2, nrow = 2)
 dev.off()
+
+### export fire map
+tiff("1_plots/fire_map.tiff", 
+     units="cm", width=6.5, height=6.5, res=600)
+ggplot(data = comm_data) +
+  geom_point(aes(x = longitude, 
+                 y = latitude,
+                 size = fire_frequency
+  ),
+  alpha = 0.20,
+  position = position_jitter(height= 0.25, width = 0.25)
+  ) +
+  scale_size(
+    breaks = c(1,3,6),
+    labels = c(1,3,6),
+    guide = "legend"
+  )+
+  xlab("Longitude") +
+  ylab("Latitude") +
+  theme(panel.background=element_rect(fill="white"),
+        panel.grid=element_line(colour=NULL),
+        panel.border=element_rect(fill=NA,colour="black"),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10),
+        axis.text.x = element_text(size= 10, angle = 0),
+        axis.text.y = element_text(size= 10, angle = 0),
+        legend.title= element_blank(),
+        legend.key.size =  unit(0.05, 'cm'),
+        legend.background = element_rect(colour = "black", linetype='solid', fill = NA),
+        legend.key = element_rect(colour = NA, fill = NA),
+        legend.direction="vertical",
+        legend.position = c(0.8,0.70)
+  )
+dev.off()
+
 
 ############################## SPECIES RICHNESS ###############################
 
@@ -252,25 +315,13 @@ for(i in 1:length(all_explanatory) ){
 }
 dev.off()
 
-############################### SPECIES ABUNDANCE #############################
-
-glm_abund1 = glm(
-  data = s_comm_data,
-  density ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
-  family = poisson(link = "identity")
-)
-
-summary(glm_abund1)
-plot(glm_abund1)
-shapiro.test(resid(glm_abund1))
-
 #################################### FISHER ALPHA ##############################
 
 ### species diversity model
 glm_fish1 = glm(
   data = s_comm_data,
   fisher ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
-  family = Gamma(link = "log")
+  family = Gamma(link = "identity")
 )
 
 ### model summary
@@ -278,65 +329,81 @@ summary(glm_fish1)
 plot(glm_fish1)
 shapiro.test(resid(glm_fish1))
 
-###### richness plots
-fish_plots = list()
-fish_relationships = c("none","none", "none", "none")
-
+### plot model? 
+show_model = c(TRUE, TRUE, FALSE, FALSE)
+## graphical parameter
+tiff("1_plots/fisher_plots.tiff", 
+     units="cm", width=14, height=14, res=600)
+par(mfrow = c(2,2))
+par(mar = c(4.5, 4, 1, 1))
 ### plots 
 for(i in 1:length(all_explanatory) ){
-  
-  fish_plots[[i]] = model_plot(data = s_comm_data %>% mutate(fisher = log(fisher)),
-                               x = all_explanatory[i],
-                               y = "fisher", 
-                               model = gls_fish1,
-                               relationship = fish_relationships[i],
-                               x_label = all_xlabels[i], 
-                               y_label = "ln(Fisher's alpha)")
+  ## variables names
+  x = all_explanatory[i]
+  y = "fisher"
+  ## get variables
+  pred = as.numeric(s_comm_data[[x]])
+  resp = as.numeric(s_comm_data[[y]])
+  ## simple model for each predictor
+  model = glm(resp ~ pred, Gamma("identity"))
+  ## plot model
+  plot_glm(
+    data = s_comm_data,
+    x = x,
+    y = y, 
+    model = model,
+    show_model = show_model[i],
+    x_label = all_xlabels[i], 
+    y_label = "Fisher's alpha"
+  )
 }
-
-tiff("plots/fisher_plots.tiff", units="cm", width=14, height=14, res=600)
-ggarrange(fish_plots[[1]], fish_plots[[2]], fish_plots[[3]], fish_plots[[4]],
-          labels = c("A", "B", "C", "D"),
-          ncol = 2, nrow = 2)
 dev.off()
 
 ############################## SPECIES COMPOSITION #############################
 
+###### FIRST AXIS
 hist(s_comm_data$floristic_PCo1)
 
 ### species compostion model 1
 glm_comp1 = glm(
   data = s_comm_data,
   floristic_PCo1 ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
-  family = gaussian(link = "inverse")
+  family = gaussian(link = "identity")
 )
 
 summary(glm_comp1)
 plot(glm_comp1)
 shapiro.test(resid(glm_comp1) )
 
-###### composition2 plots
-comp1_plots = list()
-comp1_relationships = c("none","none", "none", "none")
-
+### plot model? 
+show_model = c(TRUE, TRUE, F, F)
+## graphical parameter
+tiff("1_plots/pco1_plots.tiff", 
+     units="cm", width=14, height=14, res=600)
+par(mfrow = c(2,2))
+par(mar = c(4.5, 4, 1, 1))
 ### plots 
 for(i in 1:length(all_explanatory) ){
-  
-  comp1_plots[[i]] = model_plot(data = s_comm_data,
-                                x = all_explanatory[i],
-                                y = "floristic_PCo1", 
-                                model = gls_comp1,
-                                relationship = comp1_relationships[i],
-                                x_label = all_xlabels[i], 
-                                y_label = "Floristic PCo1")
+  ## variables names
+  x = all_explanatory[i]
+  y = "floristic_PCo1"
+  ## get variables
+  pred = as.numeric(s_comm_data[[x]])
+  resp = as.numeric(s_comm_data[[y]])
+  ## simple model for each predictor
+  model = glm(resp ~ pred, gaussian("identity"))
+  ## plot model
+  plot_glm(
+    data = s_comm_data,
+    x = x,
+    y = y, 
+    model = model,
+    show_model = show_model[i],
+    x_label = all_xlabels[i], 
+    y_label = "Floristic PCo1"
+  )
 }
-
-tiff("plots/comp1_plots.tiff", units="cm", width=14, height=14, res=600)
-ggarrange(comp1_plots[[1]], comp1_plots[[2]], comp1_plots[[3]], comp1_plots[[4]],
-          labels = c("A", "B", "C", "D"),
-          ncol = 2, nrow = 2)
 dev.off()
-
 
 ###### SECOND AXIS
 hist(comm_data$floristic_PCo2)
@@ -351,29 +418,34 @@ glm_comp2 = glm(
 ### summary model
 summary(glm_comp2)
 plot(glm_comp2)
-check_resid(model = gls_comp2)
+shapiro.test(resid(glm_comp2) )
 
-###### composition2 plots
-comp2_plots = list()
-comp2_relationships = c("linear","none", "none", "linear")
-
+### plot model? 
+show_model = c(F, F, T, F)
+## graphical parameter
+tiff("1_plots/pco2_plots.tiff", 
+     units="cm", width=14, height=14, res=600)
+par(mfrow = c(2,2))
+par(mar = c(4.5, 4, 1, 1))
 ### plots 
 for(i in 1:length(all_explanatory) ){
-  
-  comp2_plots[[i]] = model_plot(data = s_comm_data,
-                                x = all_explanatory[i],
-                                y = "floristic_PCo2", 
-                                model = gls_comp2,
-                                relationship = comp2_relationships[i],
-                                x_label = all_xlabels[i], 
-                                y_label = "Floristic PCo2")
+  ## variables names
+  x = all_explanatory[i]
+  y = "floristic_PCo2"
+  ## get variables
+  pred = as.numeric(s_comm_data[[x]])
+  resp = as.numeric(s_comm_data[[y]])
+  ## simple model for each predictor
+  model = glm(resp ~ pred, gaussian(link = "identity"))
+  ## plot model
+  plot_glm(
+    data = s_comm_data,
+    x = x,
+    y = y, 
+    model = model,
+    show_model = show_model[i],
+    x_label = all_xlabels[i], 
+    y_label = "Floristic PCo2"
+  )
 }
-
-tiff("plots/comp2_plots.tiff", units="cm", width=14, height=14, res=600)
-ggarrange(comp2_plots[[1]], comp2_plots[[2]], comp2_plots[[3]], comp2_plots[[4]],
-          labels = c("A", "B", "C", "D"),
-          ncol = 2, nrow = 2)
 dev.off()
-
-
-

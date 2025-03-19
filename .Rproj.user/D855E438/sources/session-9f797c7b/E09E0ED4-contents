@@ -1,5 +1,4 @@
 plot_glm = function(data, x, y, model, show_model, x_label, y_label){
-  
   ### predictor and response variables
   pred = as.numeric(data[[x]])
   resp = as.numeric(data[[y]])
