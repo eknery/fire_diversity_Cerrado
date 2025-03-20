@@ -6,9 +6,7 @@ if (!require("ggplot2")) install.packages("ggplot2"); library("ggplot2")
 if (!require("ggpubr")) install.packages("ggpubr"); library("ggpubr")
 if (!require("ape")) install.packages("ape"); library("ape")
 if (!require("vegan")) install.packages("vegan"); library("vegan")
-
-### my functions
-source("scripts/function_model_plot.R")
+if (!require("spdep")) install.packages("spdep"); library("spdep")
 
 ############################### LOADING DATA ###################################
 
@@ -183,21 +181,28 @@ mantel.test(m1 = as.matrix(geo_dist),
 
 ### PARTIAL MANTEL
 mantel_test = vegan::mantel.partial(
-  xdis = env_dist,
+  xdis = fire_dist,
   ydis = spp_dist,
   zdis = geo_dist,
   method="pearson", 
   permutations=999
 )
 
-plot(env_dist, spp_dist)
+### spatial neighbors list
+coords <- cbind(s_comm_data$longitude, s_comm_data$latitude)
+neighbors <- knearneigh(coords, k = 9)  # k-nearest neighbors
+listw <- nb2listw(knn2nb(neighbors), style = "W")
 
 ################################# FIRE REGIME #################################
+
+### calculate sac
+s_comm_data$sac <- lag.listw(listw, s_comm_data$fire_frequency)
 
 ### glm model
 glm_fire1 = glm(
   data = s_comm_data,
-  fire_frequency ~ seasonal_precipitation + soil_PC1 + soil_PC2, 
+  #fire_frequency ~ seasonal_precipitation + soil_PC1 + soil_PC2,
+  fire_frequency ~ seasonal_precipitation + soil_PC1 + soil_PC2 + sac, 
   family = poisson("log")
 )
 
@@ -269,15 +274,17 @@ ggplot(data = comm_data) +
   )
 dev.off()
 
-
 ############################## SPECIES RICHNESS ###############################
 
 ##### species richeness
 hist(log(s_comm_data$richness) )
+### compute SAC
+s_comm_data$sac <- lag.listw(listw, s_comm_data$richness)
 ### species richness model
 glm_rich1 = glm(
   data = s_comm_data,
-  richness ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  #richness ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  richness ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2 + sac, 
   family = poisson(link = "identity")
 )
 ### model summary
@@ -317,10 +324,14 @@ dev.off()
 
 #################################### FISHER ALPHA ##############################
 
+### compute SAC
+s_comm_data$sac <- lag.listw(listw, s_comm_data$fisher)
+
 ### species diversity model
 glm_fish1 = glm(
   data = s_comm_data,
-  fisher ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  #fisher ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  fisher ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2 + sac, 
   family = Gamma(link = "identity")
 )
 
@@ -364,10 +375,14 @@ dev.off()
 ###### FIRST AXIS
 hist(s_comm_data$floristic_PCo1)
 
+### compute SAC
+s_comm_data$sac <- lag.listw(listw, s_comm_data$floristic_PCo1)
+
 ### species compostion model 1
 glm_comp1 = glm(
   data = s_comm_data,
-  floristic_PCo1 ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  # floristic_PCo1 ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  floristic_PCo1 ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2 + sac, 
   family = gaussian(link = "identity")
 )
 
@@ -376,7 +391,7 @@ plot(glm_comp1)
 shapiro.test(resid(glm_comp1) )
 
 ### plot model? 
-show_model = c(TRUE, TRUE, F, F)
+show_model = c(F, F, T, F)
 ## graphical parameter
 tiff("1_plots/pco1_plots.tiff", 
      units="cm", width=14, height=14, res=600)
@@ -408,10 +423,14 @@ dev.off()
 ###### SECOND AXIS
 hist(comm_data$floristic_PCo2)
 
+### compute SAC
+s_comm_data$sac <- lag.listw(listw, s_comm_data$floristic_PCo2)
+
 ### species compostion model 2
 glm_comp2 = glm(
   data = s_comm_data ,
-  floristic_PCo2 ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  # floristic_PCo2 ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  floristic_PCo2 ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2 + sac, 
   family = gaussian(link = "identity")
 )
 

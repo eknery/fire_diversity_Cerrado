@@ -1,0 +1,20 @@
+s_comm_data
+
+### species richness model
+glm1 = glm(
+  data = s_comm_data,
+  fisher ~site,
+  family = Gamma(link = "identity")
+)
+
+s_comm_data$residual = resid(glm1)
+
+glm2 = glm(
+  data = s_comm_data,
+  residual ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  gaussian()
+)
+
+### model summary
+summary(glm2)
+shapiro.test(resid(glm2))

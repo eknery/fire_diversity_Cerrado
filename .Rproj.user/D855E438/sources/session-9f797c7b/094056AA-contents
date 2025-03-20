@@ -1,0 +1,14 @@
+
+
+
+
+# Compute SAC
+s_comm_data$sac <- lag.listw(listw, s_comm_data$richness)
+
+glm_rich2 = glm(
+  data = s_comm_data,
+  richness ~ s_fire_frequency + seasonal_precipitation + sac, 
+  family = poisson(link = "identity")
+)
+
+summary(glm_rich2)
