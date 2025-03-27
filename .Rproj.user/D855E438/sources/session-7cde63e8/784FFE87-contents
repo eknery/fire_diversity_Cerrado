@@ -65,14 +65,25 @@ low_fire_sp = ind_data %>%
 which(low_fire_sp$sp == high_fire_sp$sp[[1]])
 
 ##### SOIL NUTRIENTS
-
-### high fire plots
-high_nturi_plot = comm_data %>% 
-  filter(soil_PC1 >= 5) %>% 
+hist(comm_data$soil_PC1)
+### high nutri plots
+high_nutri_plot = comm_data %>% 
+  filter(soil_PC1 >= 1) %>% 
   select(plot_id) 
 
-high_fire_sp = ind_data %>% 
-  filter(plot_id %in% high_fire_plot$plot_id) %>% 
+high_nutri_sp = ind_data %>% 
+  filter(plot_id %in% high_nutri_plot$plot_id) %>% 
+  group_by(sp) %>% 
+  reframe(n = n()) %>% 
+  arrange(desc(n))
+
+### high nutri plots
+low_nutri_plot = comm_data %>% 
+  filter(soil_PC1 <= -3) %>% 
+  select(plot_id) 
+
+low_nutri_sp = ind_data %>% 
+  filter(plot_id %in% low_nutri_plot$plot_id) %>% 
   group_by(sp) %>% 
   reframe(n = n()) %>% 
   arrange(desc(n))

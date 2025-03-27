@@ -279,7 +279,7 @@ dev.off()
 ##### species richeness
 hist(log(s_comm_data$richness) )
 ### compute SAC
-s_comm_data$sac <- lag.listw(listw, s_comm_data$richness)
+s_comm_data$sac <- scale(lag.listw(listw, s_comm_data$richness))
 ### species richness model
 glm_rich1 = glm(
   data = s_comm_data,
@@ -325,7 +325,7 @@ dev.off()
 #################################### FISHER ALPHA ##############################
 
 ### compute SAC
-s_comm_data$sac <- lag.listw(listw, s_comm_data$fisher)
+s_comm_data$sac <- scale(lag.listw(listw, s_comm_data$fisher))
 
 ### species diversity model
 glm_fish1 = glm(
@@ -376,7 +376,7 @@ dev.off()
 hist(s_comm_data$floristic_PCo1)
 
 ### compute SAC
-s_comm_data$sac <- lag.listw(listw, s_comm_data$floristic_PCo1)
+s_comm_data$sac <- scale(lag.listw(listw, s_comm_data$floristic_PCo1) )
 
 ### species compostion model 1
 glm_comp1 = glm(
@@ -424,7 +424,7 @@ dev.off()
 hist(comm_data$floristic_PCo2)
 
 ### compute SAC
-s_comm_data$sac <- lag.listw(listw, s_comm_data$floristic_PCo2)
+s_comm_data$sac = scale(lag.listw(listw, s_comm_data$floristic_PCo2))
 
 ### species compostion model 2
 glm_comp2 = glm(
