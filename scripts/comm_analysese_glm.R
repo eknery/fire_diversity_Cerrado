@@ -1,12 +1,13 @@
 ########################## LOADING LIBRARIES ##################################
 
-### maintained packages
+### packages
 if (!require("tidyverse")) install.packages("tidyverse"); require("tidyverse")
 if (!require("ggplot2")) install.packages("ggplot2"); library("ggplot2")
 if (!require("ggpubr")) install.packages("ggpubr"); library("ggpubr")
 if (!require("ape")) install.packages("ape"); library("ape")
 if (!require("vegan")) install.packages("vegan"); library("vegan")
 if (!require("spdep")) install.packages("spdep"); library("spdep")
+source("scripts/function_plot_glm.R")
 
 ############################### LOADING DATA ###################################
 
@@ -29,25 +30,64 @@ ind_data  =  ind_data %>%
 comm_data  =  comm_data %>% 
   unite("plot_id", site, plot, sep="_", remove = FALSE)
 
-### transforming fire
+### processing variables
 comm_data = comm_data %>% 
-  mutate(fire_frequency = burned * 10)
-
-### scaled predictors
-s_comm_data = comm_data %>% 
   mutate(
-    s_fire_frequency = scale(fire_frequency),
+    burned = burned * 10, # response fire
+    fire_frequency = burned * 10 # explanatory fire
+  ) %>% 
+  mutate(
+    fire_frequency = scale(fire_frequency),
     seasonal_precipitation = scale(seasonal_precipitation),
     soil_PC1 = scale(soil_PC1),
     soil_PC2 = scale(soil_PC2)
   )
 
-hist(comm_data$fire_frequency)
+### renaming to avoid conflict predictors
+p_comm_data = comm_data %>% 
+  rename(
+    p_burned = burned,
+    p_richness = richness,
+    p_fisher = fisher,
+    p_floristic_PCo1 = floristic_PCo1,
+    p_floristic_PCo2 = floristic_PCo2,
+    p_fire_frequency = fire_frequency,
+    p_seasonal_precipitation = seasonal_precipitation,
+    p_soil_PC1 = soil_PC1,
+    p_soil_PC2 = soil_PC2
+  )
+
+### summarize by site
+s_comm_data = p_comm_data %>% 
+  group_by(site) %>%  
+  summarise(
+    burned = round(median(p_burned, na.rm = T)),
+    burned_min = min(p_burned, na.rm = T),
+    burned_max = max(p_burned, na.rm = T),
+    richness = round(mean(p_richness, na.rm = T)),
+    richness_min = round(mean(p_richness, na.rm = T)) - sd(p_richness, na.rm = T),
+    richness_max = round(mean(p_richness, na.rm = T)) + sd(p_richness, na.rm = T),
+    fisher = mean(p_fisher, na.rm = T),
+    fisher_min = min(p_fisher, na.rm = T),
+    fisher_max = max(p_fisher, na.rm = T),
+    floristic_PCo1 = mean(p_floristic_PCo1, na.rm = T),
+    floristic_PCo1_min = min(p_floristic_PCo1, na.rm = T),
+    floristic_PCo1_max = max(p_floristic_PCo1, na.rm = T),
+    floristic_PCo2 = mean(p_floristic_PCo2, na.rm = T),
+    floristic_PCo2_min = min(p_floristic_PCo2, na.rm = T),
+    floristic_PCo2_max = max(p_floristic_PCo2, na.rm = T),
+    fire_frequency = round(median(p_fire_frequency, na.rm = T)),
+    seasonal_precipitation =  mean(p_seasonal_precipitation, na.rm = T),
+    soil_PC1 =  mean(p_soil_PC1, na.rm = T),
+    soil_PC2 =  mean(p_soil_PC2, na.rm = T),
+    longitude = mean(longitude, na.rm = T),
+    latitude = mean(latitude, na.rm = T)
+  )
 
 ########################## OVERALL PARAMETERS ##########################
 
 ### all explanatory vars
-all_explanatory = c("s_fire_frequency", 
+all_explanatory = c("fire_frequency", 
                     "seasonal_precipitation",
                     "soil_PC1",
                     "soil_PC2"
@@ -61,7 +101,7 @@ all_xlabels = c("Fire frequency",
                 
 )
 
-################################# ORDINATION ###################################
+############################## FLORISTIC ORDINATION ############################
 
 ### sp presence matrix
 plot_mtx = ind_data %>% 
@@ -84,134 +124,34 @@ ord = pcoa(exdistance)
 ord$values
 sum(ord$values$Relative_eig)
 
-#################################### MANTEL TEST ################################
-
-### all species names
-spp_names = as.character(unique(ind_data$sp))
-
-### species presence per plot
-plot_spp = ind_data %>% 
-  mutate(plot_id = as.character(plot_id)) %>% 
-  group_by(plot_id) %>% 
-  reframe(sp = as.character(unique(sp)), presence = 1) %>% 
-  pivot_wider(names_from = sp,
-              names_expand = T,
-              values_from = presence,
-              values_fill = as.integer(0)
-  )
-
-### diversity per plot
-plot_div = comm_data %>% 
-  unite("plot_id", site, plot, sep="_", remove = FALSE) %>% 
-  mutate(plot_id = as.character(plot_id)) %>% 
-  dplyr::select(any_of(c("plot_id", 
-                         "richness", 
-                         "fisher",
-                         "floristic_PCo1",
-                         "floristic_PCo2"
-  ) 
-  ) 
-  )
-
-### environment per plot
-plot_env = comm_data %>% 
-  unite("plot_id", site, plot, sep="_", remove = FALSE) %>% 
-  mutate(plot_id = as.character(plot_id)) %>% 
-  dplyr::select(any_of(c("plot_id", 
-                         "fire_frequency", 
-                         "seasonal_precipitation",
-                         "soil_PC1",
-                         "soil_PC2"
-                          ) 
-                      ) 
-  )
-
-### coordinates per plot
-plot_coords = comm_data %>% 
-  unite("plot_id", site, plot, sep="_", remove = FALSE) %>% 
-  select("plot_id", "longitude", "latitude")
-
-### transforming in matrix
-plot_spp_mtx = as.matrix(plot_spp[,-1])
-plot_env_mtx = as.matrix(plot_env[,-1])
-plot_rich_mtx = as.matrix(plot_div[,"richness"])
-plot_fish_mtx = as.matrix(plot_div[,"fisher"])
-plot_flo1_mtx = as.matrix(plot_div[,"floristic_PCo1"])
-plot_flo2_mtx = as.matrix(plot_div[,"floristic_PCo2"])
-plot_fire_mtx = as.matrix(plot_env[,"fire_frequency"])
-plot_precip_mtx = as.matrix(plot_env[,"seasonal_precipitation"])
-plot_soil1_mtx = as.matrix(plot_env[,"soil_PC1"])
-plot_soil2_mtx = as.matrix(plot_env[,"soil_PC2"])
-plot_coords_mtx = as.matrix(plot_coords[,-1])
-
-### naming rows
-rownames(plot_spp_mtx) = plot_spp$plot_id
-rownames(plot_rich_mtx) = plot_div$plot_id
-rownames(plot_fish_mtx) = plot_div$plot_id
-rownames(plot_flo1_mtx) = plot_div$plot_id
-rownames(plot_flo2_mtx) = plot_div$plot_id
-rownames(plot_env_mtx) = plot_env$plot_id
-rownames(plot_fire_mtx) =  plot_env$plot_id
-rownames(plot_precip_mtx) =  plot_env$plot_id
-rownames(plot_soil1_mtx) =  plot_env$plot_id
-rownames(plot_soil2_mtx) =  plot_env$plot_id
-rownames(plot_coords_mtx) = plot_coords$plot_id
-
-### dissimilarity matrices
-distance = vegdist(plot_mtx[,-1], method = "bray")
-spp_dist = stepacross(dis = distance, path = "extended")
-rich_dist = dist(plot_rich_mtx, method = "euclidean")
-fish_dist = dist(plot_fish_mtx, method = "euclidean")
-flo1_dist = dist(plot_flo1_mtx, method = "euclidean")
-flo2_dist = dist(plot_flo2_mtx, method = "euclidean")
-env_dist = dist(plot_env_mtx, method = "euclidean")
-fire_dist = dist(plot_fire_mtx, method = "euclidean")
-precip_dist = dist(plot_precip_mtx, method = "euclidean")
-soil1_dist = dist(plot_soil1_mtx, method = "euclidean")
-soil2_dist = dist(plot_soil2_mtx, method = "euclidean")
-geo_dist = dist(plot_coords_mtx, method = "euclidean")
-
-### MANTEL
-mantel.test(m1 = as.matrix(geo_dist), 
-            m2 = as.matrix(flo2_dist), 
-            graph = FALSE, 
-            nperm = 999, 
-            alternative = "greater"
-            )
-
-### PARTIAL MANTEL
-mantel_test = vegan::mantel.partial(
-  xdis = fire_dist,
-  ydis = spp_dist,
-  zdis = geo_dist,
-  method="pearson", 
-  permutations=999
-)
+################################# AUTORERESSION ###############################
 
 ### spatial neighbors list
-coords <- cbind(s_comm_data$longitude, s_comm_data$latitude)
-neighbors <- knearneigh(coords, k = 9)  # k-nearest neighbors
-listw <- nb2listw(knn2nb(neighbors), style = "W")
+coords = cbind(s_comm_data$longitude, s_comm_data$latitude)
+neighbors = knearneigh(coords, k = 2)  # k-nearest neighbors
+listw = nb2listw(knn2nb(neighbors), style = "W")
 
 ################################# FIRE REGIME #################################
 
 ### calculate sac
-s_comm_data$sac <- lag.listw(listw, s_comm_data$fire_frequency)
+s_comm_data$sac = lag.listw(listw, s_comm_data$burned)
 
 ### glm model
 glm_fire1 = glm(
   data = s_comm_data,
-  #fire_frequency ~ seasonal_precipitation + soil_PC1 + soil_PC2,
-  fire_frequency ~ seasonal_precipitation + soil_PC1 + soil_PC2 + sac, 
+  burned ~ seasonal_precipitation + soil_PC1 + soil_PC2, 
   family = poisson("log")
 )
+
+# identity AIC 27.524
+# log AIC 27.08
 
 summary(glm_fire1)
 plot(glm_fire1)
 shapiro.test( residuals(glm_fire1) )
 
 ### plot model? 
-show_model = c(FALSE,FALSE,TRUE, FALSE)
+show_model = c(FALSE,FALSE,FALSE, FALSE)
 ## graphical parameter
 tiff("1_plots/fire_plots.tiff", 
      units="cm", width=14, height=14, res=600)
@@ -221,7 +161,7 @@ par(mar = c(4.5, 4, 1, 1))
 for(i in 1:length(all_explanatory) ){
   ## variables names
   x = all_explanatory[i]
-  y = "fire_frequency"
+  y = "burned"
   ## get variables
   pred = as.numeric(s_comm_data[[x]])
   resp = as.numeric(s_comm_data[[y]])
@@ -233,6 +173,7 @@ for(i in 1:length(all_explanatory) ){
     x = x,
     y = y, 
     model = model,
+    show_limits = F, 
     show_model = show_model[i],
     x_label = all_xlabels[i], 
     y_label = "Fire frequency"
@@ -279,14 +220,15 @@ dev.off()
 ##### species richeness
 hist(log(s_comm_data$richness) )
 ### compute SAC
-s_comm_data$sac <- scale(lag.listw(listw, s_comm_data$richness))
+s_comm_data$sac = scale(lag.listw(listw, s_comm_data$richness))
+
 ### species richness model
 glm_rich1 = glm(
   data = s_comm_data,
-  #richness ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
-  richness ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2 + sac, 
-  family = poisson(link = "identity")
+  richness ~ fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  family = poisson(link = "sqrt")
 )
+
 ### model summary
 summary(glm_rich1)
 plot(glm_rich1)
@@ -308,7 +250,7 @@ for(i in 1:length(all_explanatory) ){
   pred = as.numeric(s_comm_data[[x]])
   resp = as.numeric(s_comm_data[[y]])
   ## simple model for each predictor
-  model = glm(resp ~ pred, poisson("identity"))
+  model = glm(resp ~ pred, poisson("sqrt"))
   ## plot model
   plot_glm(
     data = s_comm_data,
@@ -330,9 +272,8 @@ s_comm_data$sac <- scale(lag.listw(listw, s_comm_data$fisher))
 ### species diversity model
 glm_fish1 = glm(
   data = s_comm_data,
-  #fisher ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
-  fisher ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2 + sac, 
-  family = Gamma(link = "identity")
+  fisher ~ fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
+  family = inverse.gaussian(link = "identity")
 )
 
 ### model summary
@@ -341,7 +282,7 @@ plot(glm_fish1)
 shapiro.test(resid(glm_fish1))
 
 ### plot model? 
-show_model = c(TRUE, TRUE, FALSE, FALSE)
+show_model = c(T, T, F, F)
 ## graphical parameter
 tiff("1_plots/fisher_plots.tiff", 
      units="cm", width=14, height=14, res=600)
@@ -356,7 +297,7 @@ for(i in 1:length(all_explanatory) ){
   pred = as.numeric(s_comm_data[[x]])
   resp = as.numeric(s_comm_data[[y]])
   ## simple model for each predictor
-  model = glm(resp ~ pred, Gamma("identity"))
+  model = glm(resp ~ pred, inverse.gaussian("identity"))
   ## plot model
   plot_glm(
     data = s_comm_data,
@@ -381,17 +322,20 @@ s_comm_data$sac <- scale(lag.listw(listw, s_comm_data$floristic_PCo1) )
 ### species compostion model 1
 glm_comp1 = glm(
   data = s_comm_data,
-  # floristic_PCo1 ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
-  floristic_PCo1 ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2 + sac, 
+  floristic_PCo1 ~ fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
   family = gaussian(link = "identity")
 )
+
+## link function
+# identity AIC: -10.17.. significant
+# inverse AIC: -17.45
 
 summary(glm_comp1)
 plot(glm_comp1)
 shapiro.test(resid(glm_comp1) )
 
 ### plot model? 
-show_model = c(F, F, T, F)
+show_model = c(T, F, F, F)
 ## graphical parameter
 tiff("1_plots/pco1_plots.tiff", 
      units="cm", width=14, height=14, res=600)
@@ -429,18 +373,17 @@ s_comm_data$sac = scale(lag.listw(listw, s_comm_data$floristic_PCo2))
 ### species compostion model 2
 glm_comp2 = glm(
   data = s_comm_data ,
-  # floristic_PCo2 ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
-  floristic_PCo2 ~ s_fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2 + sac, 
+  floristic_PCo2 ~ fire_frequency + seasonal_precipitation + soil_PC1 + soil_PC2, 
   family = gaussian(link = "identity")
 )
 
 ### summary model
 summary(glm_comp2)
-plot(glm_comp2)
+297plot(glm_comp2)
 shapiro.test(resid(glm_comp2) )
 
 ### plot model? 
-show_model = c(F, F, T, F)
+show_model = c(F, F, F, F)
 ## graphical parameter
 tiff("1_plots/pco2_plots.tiff", 
      units="cm", width=14, height=14, res=600)
