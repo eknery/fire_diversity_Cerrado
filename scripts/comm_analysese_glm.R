@@ -95,7 +95,7 @@ all_explanatory = c("fire_frequency",
 
 ### all x-axis labels
 all_xlabels = c("Fire frequency",
-                "Seasonal precipitation",
+                "Precipitation seasonality",
                 "Soil PC1",
                 "Soil PC2"
                 
